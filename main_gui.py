@@ -3,34 +3,39 @@ from tkinter import ttk, messagebox, filedialog
 
 class App:
     def __init__(self, root):
-        self.root = root
-        self.root.title("Распределение грузов")
+        self.root = root  # Ссылка на основное окно приложения
+        self.root.title("Распределение грузов")  # Заголовок окна
         
+        # Списки для хранения данных о клиентах, транспорте и компаниях
         self.clients = []
         self.vehicles = []
         self.companies = []
 
-        # Меню
-        self.menu = tk.Menu(root)
-        self.root.config(menu=self.menu)
+        # Создание меню
+        self.menu = tk.Menu(root)  # Главное меню
+        self.root.config(menu=self.menu)  # Настройка меню в окне
 
+        # Подменю "Файл"
         self.file_menu = tk.Menu(self.menu, tearoff=0)
-        self.file_menu.add_command(label="Экспорт результата", command=self.export_results)
-        self.menu.add_cascade(label="Файл", menu=self.file_menu)
-        
+        self.file_menu.add_command(label="Экспорт результата", command=self.export_results)  # Экспорт данных
+        self.menu.add_cascade(label="Файл", menu=self.file_menu)  # Добавление подменю в главное меню
+
+        # Добавление пункта "О программе" в меню
         self.menu.add_command(label="О программе", command=self.show_about)
 
         # Рабочая область
-        self.main_frame = tk.Frame(root)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.main_frame = tk.Frame(root)  # Основной фрейм
+        self.main_frame.pack(fill=tk.BOTH, expand=True)  # Упаковка фрейма на весь экран
 
+        # Панель управления (слева)
         self.control_panel = tk.Frame(self.main_frame)
-        self.control_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        self.control_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)  # Расположение панели
 
+        # Панель с таблицами данных (справа)
         self.data_panel = tk.Frame(self.main_frame)
         self.data_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        # Панель управления объектами
+        # Кнопки управления
         self.add_client_button = tk.Button(self.control_panel, text="Добавить клиента", command=self.add_client)
         self.add_client_button.pack(pady=5)
 
@@ -46,13 +51,14 @@ class App:
         self.allocate_button = tk.Button(self.control_panel, text="Распределить грузы", command=self.allocate_cargo)
         self.allocate_button.pack(pady=5)
 
-        # Таблицы данных
+        # Таблица данных о клиентах
         self.client_table = ttk.Treeview(self.data_panel, columns=("name", "weight", "vip"), show="headings")
         self.client_table.heading("name", text="Имя клиента")
         self.client_table.heading("weight", text="Вес груза")
         self.client_table.heading("vip", text="VIP статус")
         self.client_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        # Таблица данных о транспорте
         self.vehicle_table = ttk.Treeview(self.data_panel, columns=("id", "type", "capacity", "load"), show="headings")
         self.vehicle_table.heading("id", text="ID транспорта")
         self.vehicle_table.heading("type", text="Тип транспорта")
@@ -61,63 +67,71 @@ class App:
         self.vehicle_table.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         # Статусная строка
-        self.status_bar = tk.Label(root, text="Готово", bd=1, relief=tk.SUNKEN, anchor=tk.W)
-        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.status_bar = tk.Label(root, text="Готово", bd=1, relief=tk.SUNKEN, anchor=tk.W)  # Строка состояния
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)  # Размещение статусной строки внизу
 
+    # Функция для добавления компании
     def add_company(self):
-        AddCompanyWindow(self)
+        AddCompanyWindow(self)  # Открытие окна добавления компании
     
-    # Остальной код остаётся без изменений
-
+    # Обновление статусной строки
     def update_status(self, message):
-        self.status_bar.config(text=message)
+        self.status_bar.config(text=message)  # Изменение текста в статусной строке
 
+    # Открытие окна добавления клиента
     def add_client(self):
         AddClientWindow(self)
 
+    # Открытие окна добавления транспортного средства
     def add_vehicle(self):
         AddVehicleWindow(self)
 
+    # Открытие окна управления компаниями
     def manage_companies(self):
         ManageCompaniesWindow(self)
 
+    # Распределение грузов
     def allocate_cargo(self):
         if not self.clients or not self.vehicles or not self.companies:
             self.update_status("Недостаточно данных для распределения.")
             return
-        for company in self.companies:
-            company["vehicles"].sort(key=lambda v: v["capacity"])
-            for client in self.clients:
-                for vehicle in company["vehicles"]:
-                    if vehicle["capacity"] - vehicle["load"] >= client["weight"]:
-                        vehicle["load"] += client["weight"]
+        for company in self.companies:  # Для каждой компании
+            company["vehicles"].sort(key=lambda v: v["capacity"])  # Сортировка транспорта по грузоподъемности
+            for client in self.clients:  # Для каждого клиента
+                for vehicle in company["vehicles"]:  # Для каждого транспортного средства
+                    if vehicle["capacity"] - vehicle["load"] >= client["weight"]:  # Если груз можно загрузить
+                        vehicle["load"] += client["weight"]  # Добавляем груз на транспорт
                         break
         self.update_status("Распределение завершено.")
 
+    # Экспорт результатов распределения
     def export_results(self):
         if not self.clients or not self.vehicles or not self.companies:
             messagebox.showwarning("Ошибка", "Нет данных для экспорта.")
             return
-        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])  # Окно выбора пути для сохранения файла
         if file_path:
-            with open(file_path, 'w') as f:
+            with open(file_path, 'w') as f:  # Открытие файла для записи
                 f.write("Результаты распределения грузов\n")
-                for company in self.companies:
+                for company in self.companies:  # Для каждой компании
                     f.write(f"Компания: {company['name']}\n")
-                    for vehicle in company["vehicles"]:
+                    for vehicle in company["vehicles"]:  # Для каждого транспортного средства
                         f.write(f"  Транспорт {vehicle['type']} (Грузоподъемность: {vehicle['capacity']}, Загрузка: {vehicle['load']})\n")
                 f.write("\n")
-            self.update_status("Результаты сохранены.")
+            self.update_status("Результаты сохранены.")  # Обновление статусной строки
 
+    # Окно "О программе"
     def show_about(self):
         messagebox.showinfo("О программе", "Лабораторная Работа №12 \nРазработчик: Луценко Д.К.\nГруппа: 81ТП ")
 
+# Класс для окна добавления клиента
 class AddClientWindow:
     def __init__(self, app):
         self.app = app
-        self.window = tk.Toplevel()
-        self.window.title("Добавить клиента")
+        self.window = tk.Toplevel()  # Создание нового окна
+        self.window.title("Добавить клиента")  # Заголовок окна
 
+        # Элементы управления в окне добавления клиента
         tk.Label(self.window, text="Имя клиента").pack(pady=5)
         self.name_entry = tk.Entry(self.window)
         self.name_entry.pack(pady=5)
@@ -129,16 +143,21 @@ class AddClientWindow:
         self.vip_var = tk.BooleanVar()
         tk.Checkbutton(self.window, text="VIP статус", variable=self.vip_var).pack(pady=5)
 
-        tk.Button(self.window, text="Сохранить", command=self.save_client).pack(pady=5)
-        tk.Button(self.window, text="Отмена", command=self.window.destroy).pack(pady=5)
+        tk.Button(self.window, text="Сохранить", command=self.save_client).pack(pady=5)  # Кнопка сохранения клиента
+        tk.Button(self.window, text="Отмена", command=self.window.destroy).pack(pady=5)  # Кнопка отмены
 
+    # Функция сохранения клиента
     def save_client(self):
-        name = self.name_entry.get()
-        weight = self.weight_entry.get()
+        name = self.name_entry.get()  # Получаем имя клиента
+        weight = self.weight_entry.get()  # Получаем вес груза
+
+        # Проверка корректности имени клиента
         if not name.isalpha() or len(name) < 2:
             messagebox.showerror("Ошибка", "Имя клиента должно содержать только буквы и быть длиннее 2 символов.")
             self.name_entry.delete(0, tk.END)
             return
+
+        # Проверка корректности веса груза
         try:
             weight = float(weight)
             if weight <= 0 or weight > 10000:
@@ -147,10 +166,15 @@ class AddClientWindow:
             messagebox.showerror("Ошибка", "Вес груза должен быть положительным числом не более 10000.")
             self.weight_entry.delete(0, tk.END)
             return
+        
+        # Добавление клиента в список и обновление таблицы
         self.app.clients.append({"name": name, "weight": weight, "vip": self.vip_var.get()})
         self.app.client_table.insert("", tk.END, values=(name, weight, "Да" if self.vip_var.get() else "Нет"))
-        self.app.update_status("Клиент добавлен.")
-        self.window.destroy()
+        self.app.update_status("Клиент добавлен.")  # Обновление статусной строки
+        self.window.destroy()  # Закрытие окна
+
+# Остальные окна (AddVehicleWindow, AddCompanyWindow, ManageCompaniesWindow) имеют аналогичную структуру.
+
 
 class AddVehicleWindow:
     def __init__(self, app):
