@@ -48,8 +48,6 @@ class App:
         self.manage_companies_button = tk.Button(self.control_panel, text="Управление компаниями", command=self.manage_companies)
         self.manage_companies_button.pack(pady=5)
 
-        self.allocate_button = tk.Button(self.control_panel, text="Распределить грузы", command=self.allocate_cargo)
-        self.allocate_button.pack(pady=5)
 
         # Таблица данных о клиентах
         self.client_table = ttk.Treeview(self.data_panel, columns=("name", "weight", "vip"), show="headings")
@@ -59,11 +57,12 @@ class App:
         self.client_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Таблица данных о транспорте
-        self.vehicle_table = ttk.Treeview(self.data_panel, columns=("id", "type", "capacity", "load"), show="headings")
+        self.vehicle_table = ttk.Treeview(self.data_panel, columns=("id", "type", "capacity", "load", "color"), show="headings")
         self.vehicle_table.heading("id", text="ID транспорта")
         self.vehicle_table.heading("type", text="Тип транспорта")
         self.vehicle_table.heading("capacity", text="Грузоподъемность")
         self.vehicle_table.heading("load", text="Текущая загрузка")
+        self.vehicle_table.heading("color", text="Цвет")
         self.vehicle_table.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         # Статусная строка
@@ -89,20 +88,6 @@ class App:
     # Открытие окна управления компаниями
     def manage_companies(self):
         ManageCompaniesWindow(self)
-
-    # Распределение грузов
-    def allocate_cargo(self):
-        if not self.clients or not self.vehicles or not self.companies:
-            self.update_status("Недостаточно данных для распределения.")
-            return
-        for company in self.companies:  # Для каждой компании
-            company["vehicles"].sort(key=lambda v: v["capacity"])  # Сортировка транспорта по грузоподъемности
-            for client in self.clients:  # Для каждого клиента
-                for vehicle in company["vehicles"]:  # Для каждого транспортного средства
-                    if vehicle["capacity"] - vehicle["load"] >= client["weight"]:  # Если груз можно загрузить
-                        vehicle["load"] += client["weight"]  # Добавляем груз на транспорт
-                        break
-        self.update_status("Распределение завершено.")
 
     # Экспорт результатов распределения
     def export_results(self):
@@ -146,8 +131,14 @@ class AddClientWindow:
         tk.Button(self.window, text="Сохранить", command=self.save_client).pack(pady=5)  # Кнопка сохранения клиента
         tk.Button(self.window, text="Отмена", command=self.window.destroy).pack(pady=5)  # Кнопка отмены
 
+        # Bind Enter key to save changes
+        self.window.bind("<Return>", self.save_client)
+
+        # Bind Escape key to close the popup
+        self.window.bind("<Escape>", self.window.destroy)
+
     # Функция сохранения клиента
-    def save_client(self):
+    def save_client(self, event=None):
         name = self.name_entry.get()  # Получаем имя клиента
         weight = self.weight_entry.get()  # Получаем вес груза
 
@@ -197,7 +188,13 @@ class AddVehicleWindow:
         tk.Button(self.window, text="Сохранить", command=self.save_vehicle).pack(pady=5)
         tk.Button(self.window, text="Отмена", command=self.window.destroy).pack(pady=5)
 
-    def save_vehicle(self):
+        # Bind Enter key to save changes
+        self.window.bind("<Return>", self.save_vehicle)
+
+        # Bind Escape key to close the popup
+        self.window.bind("<Escape>", self.window.destroy)
+
+    def save_vehicle(self, event=None):
         vehicle_type = self.type_combo.get()
         capacity = self.capacity_entry.get()
         color = self.color_entry.get()
@@ -238,7 +235,13 @@ class AddCompanyWindow:
         tk.Button(self.window, text="Сохранить", command=self.save_company).pack(pady=5)
         tk.Button(self.window, text="Отмена", command=self.window.destroy).pack(pady=5)
 
-    def save_company(self):
+        # Bind Enter key to save changes
+        self.window.bind("<Return>", self.save_company)
+
+        # Bind Escape key to close the popup
+        self.window.bind("<Escape>", self.window.destroy)
+
+    def save_company(self, event=None):
         name = self.name_entry.get()
         if not name or len(name) < 2:
             messagebox.showerror("Ошибка", "Название компании должно быть длиннее 2 символов.")
@@ -288,7 +291,7 @@ class ManageCompaniesWindow:
             messagebox.showerror("Ошибка", "Выберите компанию из списка.")
             return None
 
-    def add_vehicle_to_company(self):
+    def add_vehicle_to_company(self, event=None):
         company = self.get_selected_company()
         if not company:
             return
@@ -375,6 +378,20 @@ class ManageCompaniesWindow:
                 messagebox.showwarning("Предупреждение", f"Не удалось распределить груз клиента {client['name']}.")
 
         self.app.update_status("Распределение грузов завершено.")
+
+        # Show results in a new window
+        result_window = tk.Toplevel(self.app.root)
+        result_window.title("Результаты распределения")
+
+        result_label = tk.Label(result_window, text=f"Результаты распределения для компании {company['name']}:")
+        result_label.pack(pady=5)
+
+        for vehicle in company["vehicles"]:
+            vehicle_label = tk.Label(result_window, text=f"Транспорт {vehicle['type']}: Загружено {vehicle['load']} кг из {vehicle['capacity']} кг")
+            vehicle_label.pack(pady=2)
+
+        result_window.bind("<Escape>", lambda event: result_window.destroy())
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = App(root)
